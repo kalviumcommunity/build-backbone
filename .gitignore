@@ -1,0 +1,5 @@
+node_modules/
+.env
+baseline-results.json
+after-fixes-results.json
+*.json.gz

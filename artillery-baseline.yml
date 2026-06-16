@@ -1,0 +1,49 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "QuickBite full flow"
+    flow:
+      # Hit the restaurant list (N+1 bug endpoint)
+      - get:
+          url: "/api/restaurants"
+
+      # Hit restaurant menu (N+1 bug endpoint)
+      - get:
+          url: "/api/restaurants/1/menu"
+
+      # Login to get token
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "seed@quickbite.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "token"
+
+      # Hit order history (critical N+1 — 1+N queries)
+      - get:
+          url: "/api/orders/history"
+          headers:
+            Authorization: "Bearer {{ token }}"
+
+      # Place a new order
+      - post:
+          url: "/api/orders"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            restaurantId: 1
+            deliveryAddress: "Koramangala, Bangalore"
+            items:
+              - itemId: 1
+                quantity: 2
+              - itemId: 2
+                quantity: 1
